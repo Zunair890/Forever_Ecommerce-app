@@ -15,7 +15,6 @@ await connectDB()
  connectCloudinary()
 
 // middlewares
-
 app.use(cors());
 app.use(express.json());
 

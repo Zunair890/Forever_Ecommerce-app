@@ -3,67 +3,87 @@ import productModel from "../models/productModel.js"
 
 // function for add product
 
-const addProduct= async(req,res)=>{
-  try{
-    const{name,description,price,category,subCategory,sizes,bestseller} = req.body;
+const addProduct = async(req, res) => {
+  try {
+    // Debug log to check incoming request
+    console.log("Files received:", req.files);
+    console.log("Body received:", req.body);
 
-    const image2=req.files.image1 && req.files.image1[0];
-    const image1=req.files.image2 && req.files.image2[0];
-    const image3=req.files.image3 && req.files.image3[0];
-    const image4=req.files.image4 && req.files.image4[0];
-   
-    const images= [image1,image2,image3,image4].filter((item)=>item!== undefined)
+    const {name, description, price, category, subCategory, sizes, bestseller} = req.body;
 
-    // genereate images url using cloudinary for each image
+    // Check if files exist
+    if (!req.files || Object.keys(req.files).length === 0) {
+      console.log("No files were uploaded");
+      return res.status(400).json({
+        success: false,
+        message: "No images uploaded"
+      });
+    }
 
-    let imagesUrl= await Promise.all(
-      images.map(async(item)=>{
-        let result= await coudinary.uploader.uplaod(item.path,{resource_type:"image"});
-        return result.secure_url;
-      })
-    )
+    let imagesUrl = [];
+    
+    try {
+      // Process each image file
+      const imageFiles = [
+        req.files.image1?.[0],
+        req.files.image2?.[0],
+        req.files.image3?.[0],
+        req.files.image4?.[0]
+      ].filter(Boolean);
 
-    // product data
+      console.log("Image files to process:", imageFiles);
 
-    const productData={
+      imagesUrl = await Promise.all(
+        imageFiles.map(async(file) => {
+          console.log("Processing file:", file);
+          const result = await cloudinary.uploader.upload(file.path, {
+            resource_type: "image"
+          });
+          console.log("Cloudinary result:", result);
+          return result.secure_url;
+        })
+      );
+
+      console.log("Final image URLs:", imagesUrl);
+    } catch (uploadError) {
+      console.error("Image upload error:", uploadError);
+      return res.status(500).json({
+        success: false,
+        message: "Error uploading images"
+      });
+    }
+
+    const productData = {
       name,
       description,
       price: Number(price),
       category,
       subCategory,
-      bestseller:bestseller==="true"?true:false,
-      sizes:JSON.parse(sizes), // convert string to array
-      images:imagesUrl,
+      bestseller: bestseller === "true"?true:false,
+      sizes: JSON.parse(sizes),
+      image: imagesUrl, // Make sure this field matches your model
       date: Date.now()
-    }
+    };
 
-    
-        console.log(name,description,price,category,subCategory,sizes,bestseller)
-        console.log(imagesUrl)
+    console.log("Saving product data:", productData);
 
-    console.log(productData)
-  
-    const product= new productModel(productData);
+    const product = new productModel(productData);
     await product.save();
 
-
-    res.json({
-      success:true,
-      message:"Product added successfully",
+    res.status(201).json({
+      success: true,
+      message: "Product added successfully",
       product
-    })
+    });
 
+  } catch(error) {
+    console.error("Product creation error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
-  catch(error){
-    console.log(error.message);
-    res.json({
-        success:false,
-        message:error.message
-    })
-
-
-  }
-}
+};
 
 // function for listing product
 
@@ -71,6 +91,7 @@ const listProduct= async(req,res)=>{
    try{
 
      const products= await productModel.find({});
+     console.log(products)
      res.json({
       success:true, products
      });
