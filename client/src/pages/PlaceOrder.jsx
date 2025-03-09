@@ -7,6 +7,7 @@ import { ShopContext } from '../context/ShopContext'
 function PlaceOrder() {
   const {navigate,backendUrl,token,cartItems,setCartItems,getCartAmount,delivery_fee,products} = useContext(ShopContext)
   const [method, setMethod] = useState("cod")
+  const [name,setName]= useState("")
   const [formData,setFormData]= useState({
     firstName:"",
     lastName:"",
