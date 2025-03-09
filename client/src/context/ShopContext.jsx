@@ -1,10 +1,10 @@
 import PropTypes from 'prop-types';
-import { createContext, useEffect, useState } from 'react';
+import { createContext,  useEffect,  useState } from 'react';
 import { products } from '../assets/assets';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import axios from "axios"
 
+import axios from "axios"
 
 export const ShopContext = createContext();
 
@@ -44,6 +44,18 @@ const ShopContextProvider = ({ children }) => {
     }
 
     setCartItems(cartData);
+    
+   if(token){
+    try {
+      await axios.post(backendUrl+ "/api/cart/add",{itemId,size},{headers:{token}})
+    } catch (error) {
+      console.log(error)
+      toast.error(error.message)
+    }
+   }
+
+
+
   };
 
   const addOrder = () => {
@@ -82,6 +94,15 @@ const ShopContextProvider = ({ children }) => {
       let cartData= structuredClone(cartItems);
       cartData[itemId][size]= quantity;
       setCartItems(cartData);
+
+      if(token){
+        try {
+          await axios.post(backendUrl +"/api/cart/update",{itemId,size,quantity},{headers:{token}})
+        } catch (error) {
+          console.log(error);
+          toast.error(error.message)
+        }
+      }
   }
 
   const getCartAmount = ()=>{
@@ -104,23 +125,45 @@ const ShopContextProvider = ({ children }) => {
     return totalAmount
   }
 
-  const getProductData = async () => {
+  // const getProductData = async () => {
+  //   try {
+      
+  //     const response = await axios.get(backendUrl + "/api/product/list");
+  //     console.log("API Response:", response.data);
+      
+  //     if (response.data.success) {
+  //       setProducts(response.data.products);
+  //     } else {
+  //       toast.error("Failed to fetch products");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching products:", error);
+  //     toast.error(error.response?.data?.message || "Error fetching products");
+  //   }
+  // };
+ 
+  // browser has the access of token so that it will not open the login page
+  useEffect(()=>{
+     
+     if(!token && localStorage.getItem("token")){
+      setToken(localStorage.getItem("token"))
+      getUserCart(localStorage.getItem("token"))
+     }
+  },[])
+
+   // keep the cart data updated if page get reloaded
+
+   const getUserCart=async(token)=>{
     try {
-      
-      const response = await axios.get(backendUrl + "/api/product/list");
-      console.log("API Response:", response.data);
-      
-      if (response.data.success) {
-        setProducts(response.data.products);
-      } else {
-        toast.error("Failed to fetch products");
+      const response= await axios.post(backendUrl+"/api/cart/get",{},{headers:{token}});
+      if(response.data.success){
+        setCartItems(response.data.cartData)
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error(error.response?.data?.message || "Error fetching products");
+      console.log(error);
+      toast.error(error.message)
     }
-  };
-
+   }
  
 
 
@@ -134,6 +177,7 @@ const ShopContextProvider = ({ children }) => {
     showSearch,
     setShowSearch,
     cartItems,
+    setCartItems,
     addToCart,
     getCartCount,
     updateQuantity,

@@ -1,10 +1,10 @@
-import { useContext, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
 import {toast} from "react-toastify"
 
 function Login() {
-  const [currentState,setCurrentState]= useState("Sign Up");
+  const [currentState,setCurrentState]= useState("Login");
   const {token,setToken,navigate,backendUrl}=useContext(ShopContext)
   // seeting input field for loin and sign up form
   const [name,setName]=useState("")
@@ -38,6 +38,13 @@ function Login() {
       console.log(error)
     }
   }
+  useEffect(()=>{
+    if(token){
+      navigate('/')
+    }
+  },[token])
+
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800">
       <div className="inline-flex items-center gap-2 mb-2 mt-10">
