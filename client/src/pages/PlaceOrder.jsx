@@ -3,6 +3,8 @@ import { assets } from '../assets/assets'
 import CartTotal from '../components/CartTotal'
 import Title from '../components/Title'
 import { ShopContext } from '../context/ShopContext'
+import axios from 'axios'
+import { toast } from 'react-toastify'
 
 function PlaceOrder() {
   const {navigate,backendUrl,token,cartItems,setCartItems,getCartAmount,delivery_fee,products} = useContext(ShopContext)
@@ -44,9 +46,49 @@ function PlaceOrder() {
           }
         }
       }
-      console.log(orderItems)
+      let orderData={
+        address:formData,
+        items: orderItems,
+        amount: getCartAmount()+delivery_fee,
+        date: new Date()
+      }
+      switch(method){
+        // API calls for COD
+        case 'cod': {
+          const response = await axios.post(backendUrl+"/api/order/place", orderData, {headers:{token}})
+          
+          if(response.data.success) {
+            setCartItems({}); // Clear cart after successful order
+            navigate('/orders'); // Navigate to orders page
+            toast.success("Order placed successfully!");
+          }
+          else{
+            toast.error(response.data.message)
+          }
+        }
+        break;
+   
+        case 'stripe':{
+          const responseStripe= await axios.post(backendUrl +"/api/order/stripe", orderData,{headers:{token}})
+       if(responseStripe.data.success){
+        const {session_url}=responseStripe.data;
+        window.location.replace(session_url)
+       }
+       else{
+        toast.error(responseStripe.data.message)
+       }
+        }
+
+
+         break;
+
+
+        default:
+          break;
+      }
     } catch (error) {
-      console.log(error)
+      console.error("Order error:", error);
+      toast.error(error.response?.data?.message || "Error placing order");
     }
      
   }
